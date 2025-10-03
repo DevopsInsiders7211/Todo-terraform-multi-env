@@ -1,0 +1,91 @@
+name: Terraform Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Select environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+
+jobs:
+  terraform-init:
+    name: TERRAFORM INIT
+    runs-on: [self-hosted, Windows, X64]   # ✅ correct labels
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Terraform Init
+        run: |
+          terraform -chdir=env/${{ github.event.inputs.environment }} init \
+            -backend-config="appstg" \
+            -backend-config="appcontainer" \
+            -backend-config="key=${{ github.event.inputs.environment }}.terraform.tfstate" \
+            -backend-config="resource_group_name=<YOUR_BACKEND_RESOURCE_GROUP>"
+
+  terraform-plan:
+    name: TERRAFORM PLAN
+    runs-on: [self-hosted, Windows, X64]   # ✅ correct labels
+    needs: terraform-init
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Terraform Init
+        run: |
+          terraform -chdir=env/${{ github.event.inputs.environment }} init \
+            -backend-config="appstg" \
+            -backend-config="appcontainer" \
+            -backend-config="key=${{ github.event.inputs.environment }}.terraform.tfstate" \
+            -backend-config="resource_group_name=<YOUR_BACKEND_RESOURCE_GROUP>"
+
+      - name: Terraform Plan
+        run: terraform -chdir=env/${{ github.event.inputs.environment }} plan
+
+  terraform-apply:
+    name: TERRAFORM APPLY
+    runs-on: [self-hosted, Windows, X64]   # ✅ correct labels
+    needs: terraform-plan
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Terraform Init
+        run: |
+          terraform -chdir=env/${{ github.event.inputs.environment }} init \
+            -backend-config="appstg" \
+            -backend-config="appcontainer" \
+            -backend-config="key=${{ github.event.inputs.environment }}.terraform.tfstate" \
+            -backend-config="resource_group_name=<YOUR_BACKEND_RESOURCE_GROUP>"
+
+      - name: Terraform Apply
+        run: terraform -chdir=env/${{ github.event.inputs.environment }} apply -auto-approve
