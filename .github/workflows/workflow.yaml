@@ -15,13 +15,15 @@ on:
 jobs:
   terraform-init:
     name: TERRAFORM INIT
-    runs-on: self-hosted   # ✅ correct labels
+    runs-on: self-hosted   # ✅ apna runner ka exact label likho
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.5
 
       - name: Azure Login
         uses: azure/login@v2
@@ -29,16 +31,11 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Terraform Init
-        run: |
-          terraform -chdir=env/${{ github.event.inputs.environment }} init \
-            -backend-config="appstg" \
-            -backend-config="appcontainer" \
-            -backend-config="key=${{ github.event.inputs.environment }}.terraform.tfstate" \
-            -backend-config="resource_group_name=<YOUR_BACKEND_RESOURCE_GROUP>"
+        run: terraform -chdir=env/${{ github.event.inputs.environment }} init -backend-config="storage_account_name=appstg" -backend-config="container_name=appcontainer" -backend-config="key=${{ github.event.inputs.environment }}.terraform.tfstate" -backend-config="resource_group_name=<YOUR_BACKEND_RESOURCE_GROUP>"
 
   terraform-plan:
     name: TERRAFORM PLAN
-    runs-on: self-hosted   # ✅ correct labels
+    runs-on: self-hosted
     needs: terraform-init
     steps:
       - name: Checkout repo
@@ -46,26 +43,20 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.5
 
       - name: Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Terraform Init
-        run: |
-          terraform -chdir=env/${{ github.event.inputs.environment }} init \
-            -backend-config="appstg" \
-            -backend-config="appcontainer" \
-            -backend-config="key=${{ github.event.inputs.environment }}.terraform.tfstate" \
-            -backend-config="resource_group_name=<YOUR_BACKEND_RESOURCE_GROUP>"
-
       - name: Terraform Plan
-        run: terraform -chdir=env/${{ github.event.inputs.environment }} plan
+        run: terraform -chdir=env/${{ github.event.inputs.environment }} plan -out=tfplan
 
   terraform-apply:
     name: TERRAFORM APPLY
-    runs-on: self-hosted   # ✅ correct labels
+    runs-on: self-hosted
     needs: terraform-plan
     steps:
       - name: Checkout repo
@@ -73,19 +64,13 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.5
 
       - name: Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Terraform Init
-        run: |
-          terraform -chdir=env/${{ github.event.inputs.environment }} init \
-            -backend-config="appstg" \
-            -backend-config="appcontainer" \
-            -backend-config="key=${{ github.event.inputs.environment }}.terraform.tfstate" \
-            -backend-config="resource_group_name=<YOUR_BACKEND_RESOURCE_GROUP>"
-
       - name: Terraform Apply
-        run: terraform -chdir=env/${{ github.event.inputs.environment }} apply -auto-approve
+        run: terraform -chdir=env/${{ github.event.inputs.environment }} apply -auto-approve tfplan
