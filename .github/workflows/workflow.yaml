@@ -15,7 +15,7 @@ on:
 jobs:
   terraform-init:
     name: TERRAFORM INIT
-    runs-on: [self-hosted, Windows, X64]   # ✅ correct labels
+    runs-on: self-hosted   # ✅ correct labels
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -38,7 +38,7 @@ jobs:
 
   terraform-plan:
     name: TERRAFORM PLAN
-    runs-on: [self-hosted, Windows, X64]   # ✅ correct labels
+    runs-on: self-hosted   # ✅ correct labels
     needs: terraform-init
     steps:
       - name: Checkout repo
@@ -65,7 +65,7 @@ jobs:
 
   terraform-apply:
     name: TERRAFORM APPLY
-    runs-on: [self-hosted, Windows, X64]   # ✅ correct labels
+    runs-on: self-hosted   # ✅ correct labels
     needs: terraform-plan
     steps:
       - name: Checkout repo
